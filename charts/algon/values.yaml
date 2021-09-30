@@ -9,8 +9,8 @@ nameOverride: ""
 fullnameOverride: ""
 
 image:
-  repository: randmeister/algon
-  tag: stable
+  repository: algorand/stable
+  tag: "2.10.1"
   pullPolicy: Always
 
 algorand:
