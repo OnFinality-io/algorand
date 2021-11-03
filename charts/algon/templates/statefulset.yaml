@@ -1,15 +1,16 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "algon.fullname" . }}
   labels:
     {{- include "algon.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "algon.fullname" . }}
 {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
 {{- end }}
-  strategy:
-    type: Recreate
+  updateStrategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       {{- include "algon.selectorLabels" . | nindent 6 }}
@@ -48,10 +49,11 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["./algod", "-d", "data"]
           # command: ["./goal", "node", "start", "-p", "r1.algorand.network:4161;r2.algorand.network:4161"]
-          command: [ "/bin/bash" ]
-          tty: true
-          stdin: true
+          # command: [ "/bin/bash" ]
+          # tty: true
+          # stdin: true
           
           volumeMounts:
             - mountPath: "/algorand/node/data"

@@ -10,7 +10,7 @@ fullnameOverride: ""
 
 image:
   repository: algorand/stable
-  tag: "2.10.1"
+  tag: "3.0.1"
   pullPolicy: Always
 
 algorand:
@@ -81,4 +81,4 @@ tolerations: []
 affinity: {}
 
 storage:
-  size: 100Gi
+  size: 10Gi
