@@ -90,4 +90,4 @@ tolerations: []
 affinity: {}
 
 storage:
-  size: 10Gi
+  size: 100Gi
