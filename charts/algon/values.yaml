@@ -16,6 +16,15 @@ image:
 algorand:
   network: testnet
 
+#Switch readiness/liveness Probes:
+Probe:
+  enabled: true
+
+#Switch monitoring
+monitoring:
+  enabled: true
+
+
 serviceAccount:
   # Specifies whether a service account should be created
   create: true

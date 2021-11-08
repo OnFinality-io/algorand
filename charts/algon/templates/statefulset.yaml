@@ -65,17 +65,19 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
-          # readinessProbe:
-          #   tcpSocket:
-          #     port: 8080
-          #   initialDelaySeconds: 10
-          #   periodSeconds: 10
-          # livenessProbe:
-          #   httpGet:
-          #     path: /health
-          #     port: http
-          #   initialDelaySeconds: 300
-          #   periodSeconds: 60
+        {{- if .Values.Probe.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: 9100
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9100
+            initialDelaySeconds: 300
+            periodSeconds: 60
+        {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
