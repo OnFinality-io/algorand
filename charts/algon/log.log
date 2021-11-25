@@ -1,0 +1,6 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+Telemetry configured from '/algorand/node/data/logging.config'
+Logging to:  /algorand/node/data/node.log
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100    62  100    62    0     0     79      0 --:--:-- --:--:-- --:--:--    79
+Cannot contact Algorand node: Post "http://[::]:8080/v2/catchup/18110000%235LLP77P7YXWOMZ2G6FMOSQ4QRWEXCNWBBNYQSUQJMJNXFCLH5AGQ": dial tcp [::]:8080: connect: connection refused

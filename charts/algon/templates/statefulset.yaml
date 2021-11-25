@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "algon.fullname" . }}
+  name: {{ .Release.Name }} #{{ include "algon.fullname" . }}
   labels:
     {{- include "algon.labels" . | nindent 4 }}
 spec:
@@ -30,10 +30,15 @@ spec:
       volumes:
         - name: data-volume
           persistentVolumeClaim:
-            claimName: algon-data-pv-claim
+            claimName: {{ .Release.Name }}-data-pv-claim
         - name: config-volume
           configMap:
-            name: algon-configmap
+            name: {{ .Release.Name }}-configmap
+      {{ if eq .Values.script "enabled" }}
+        - name: script-volume
+          configMap:
+            name: {{ .Release.Name }}-starts-script
+      {{ end }}
       serviceAccountName: {{ include "algon.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
@@ -42,35 +47,99 @@ spec:
         - name: {{ .Chart.Name }}
           env:
             - name: ALGORAND_DATA
-              value: /algorand/node/data
+              value: "/algorand/node/data/"
             - name: ALGORAND_NETWORK
               value:  {{ .Values.algorand.network }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+
+      {{ if eq .Values.algorand.network "testnet" }}
+          image: "{{ .Values.image.testnet.repository }}:{{ .Values.image.testnet.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["./algod", "-d", "data"]
+        {{ if eq .Values.script "enabled" }}
+          command: ["sh"]
+          args: ["/scripts-dir/start_all.sh"]
+        {{ end }}
+        {{ if eq .Values.script "disabled" }}
+          command: ["/root/node/algod", "-d", "/algorand/node/data"]
+        {{ end }}
           # command: ["./goal", "node", "start", "-p", "r1.algorand.network:4161;r2.algorand.network:4161"]
           # command: [ "/bin/bash" ]
           # tty: true
           # stdin: true
-          
+      {{- end }}
+
+      {{ if eq .Values.algorand.network "mainnet" }}
+          image: "{{ .Values.image.mainnet.repository }}:{{ .Values.image.mainnet.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{ if eq .Values.script "enabled" }}
+          command: ["sh"]
+          args: ["/scripts-dir/start_all.sh"]
+        {{ end }}
+        {{ if eq .Values.script "disabled" }}
+          command: ["/root/node/algod", "-d", "/algorand/node/data"]
+        {{ end }}
+          # command: ["./goal", "node", "start", "-p", "r1.algorand.network:4161;r2.algorand.network:4161"]
+          # command: [ "/bin/bash" ]
+          # tty: true
+          # stdin: true
+      {{- end }}
+      
+      {{ if eq .Values.algorand.network "betanet" }}
+          image: "{{ .Values.image.mainnet.repository }}:{{ .Values.image.mainnet.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{ if eq .Values.script "enabled" }}
+          command: ["sh"]
+          args: ["/scripts-dir/start_all.sh"]
+        {{ end }}
+        {{ if eq .Values.script "disabled" }}
+          command: ["/root/node/algod", "-d", "/algorand/node/data"]
+        {{ end }}
+          # command: ["./goal", "node", "start", "-p", "r1.algorand.network:4161;r2.algorand.network:4161"]
+          # command: [ "/bin/bash" ]
+          # tty: true
+          # stdin: true
+      {{- end }}
+      
+      {{ if eq .Values.algorand.network "mule" }}
+          image: "{{ .Values.image.mainnet.repository }}:{{ .Values.image.mainnet.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{ if eq .Values.script "enabled" }}
+          command: ["sh"]
+          args: ["/scripts-dir/start_all.sh"]
+        {{ end }}
+        {{ if eq .Values.script "disabled" }}
+          command: ["/root/node/algod", "-d", "/algorand/node/data"]
+        {{ end }}
+          # command: ["./goal", "node", "start", "-p", "r1.algorand.network:4161;r2.algorand.network:4161"]
+          # command: [ "/bin/bash" ]
+          # tty: true
+          # stdin: true
+      {{- end }}
+      
           volumeMounts:
-            - mountPath: "/algorand/node/data"
+            - mountPath: /algorand/node/
               name: data-volume
             - mountPath: /root/node/data/config.json
               subPath: config.json
               name: config-volume
+        {{ if eq .Values.script "enabled" }}
+            - mountPath: /scripts-dir
+              name: script-volume
+        {{- end }}
+
           ports:
             - name: http
               containerPort: 8080
               protocol: TCP
-        {{- if .Values.Probe.enabled }}
+        {{- if .Values.readinessProbe.enabled }}
           readinessProbe:
             tcpSocket:
               port: 9100
             initialDelaySeconds: 30
             periodSeconds: 30
+        {{- end }}
+        {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
               path: /health

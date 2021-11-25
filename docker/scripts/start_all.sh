@@ -1,9 +1,8 @@
 #!/bin/sh
-
 set -e
 
 # Start algod
-cp node/genesisfiles/${ALGORAND_NETWORK}/genesis.json ${ALGORAND_DATA}
+cp /algorand/node/genesisfiles/${ALGORAND_NETWORK}/genesis.json ${ALGORAND_DATA}
 /algorand/node/algod -l 0.0.0.0:8080 &
 
 # Fast catchup
@@ -16,4 +15,4 @@ while true; do
 done &
 
 # Write node.log to stdout
-tail -f ${ALGORAND_DATA}/node.log
+tail -f ${ALGORAND_DATA}node.log

@@ -2,6 +2,17 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: algon-configmap    #{{ $fullName }}
+  name: {{ .Release.Name }}-configmap    #{{ $fullName }}
 data:
 {{ (.Files.Glob "config/config.json").AsConfig | indent 2 }}
+
+---
+
+{{- if eq .Values.script "enabled" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-starts-script
+data:
+{{ (.Files.Glob "scripts/start_all.sh").AsConfig | indent 2 }}
+{{- end }}
