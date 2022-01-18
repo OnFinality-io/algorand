@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{.Release.Name}}-postgres
+  labels:
+    {{- include "algon.labels" . | nindent 4 }}    
+spec:
+  selector:
+    matchLabels:
+      app: {{.Release.Name}}-postgres
+      {{- include "algon.selectorLabels" . | nindent 6 }}
+  serviceName: {{.Release.Name}}-postgres-{{.Values.algorand.network}}
+  replicas: 1 # by default is 1
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: {{.Release.Name}}-postgres
+        {{- include "algon.selectorLabels" . | nindent 8 }}
+      name: {{.Release.Name}}-postgres
+    spec:
+      containers:
+      - env:
+        - name: POSTGRES_DB_FILE
+          value: /var/run/secrets/postgres_db
+        - name: POSTGRES_LOGGING
+          value: "true"
+        - name: POSTGRES_PASSWORD_FILE
+          value: /var/run/secrets/postgres_password
+        - name: POSTGRES_USER_FILE
+          value: /var/run/secrets/postgres_user
+        name: algorand-postgres
+        image: postgres:11.5-alpine
+        ports:
+        - name: postgres
+          containerPort: 5432
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /var/run/secrets
+          name: {{.Release.Name}}-postgres-secrets
+          readOnly: true
+        - mountPath: /var/lib/postgresql
+          name: {{.Release.Name}}-postgres-claim
+      volumes:
+      - name: {{.Release.Name}}-postgres-secrets
+        secret:
+          items:
+          - key: postgres_password
+            path: postgres_password
+          - key: postgres_user
+            path: postgres_user
+          - key: postgres_db
+            path: postgres_db
+          secretName: {{.Release.Name}}-postgres-secrets
+      - name: {{.Release.Name}}-postgres-claim
+        persistentVolumeClaim:
+          claimName: {{.Release.Name}}-postgres-claim
+  volumeClaimTemplates:
+  - metadata:
+      name: {{.Release.Name}}-postgres-claim
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName:
+      resources:
+        requests:
+          storage: {{.Values.postgresStorage}}

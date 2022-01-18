@@ -2,19 +2,55 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# Switch network from mainnet, testnet, betanet or mule
+algorand:
+  network: mainnet
+
 replicaCount: 1
 
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-image:
-  repository: algorand/stable
-  tag: "2.10.1"
-  pullPolicy: Always
 
-algorand:
-  network: testnet
+image:
+# From https://hub.docker.com/r/algorand/stable/tags
+  mainnet:
+    repository: bvvovk/algoncustom #algorand/testnet
+    tag: "6" #"3.0.1"   
+    # repository: algorand/stable
+    # tag: "3.0.1"
+    pullPolicy: Always
+# From https://hub.docker.com/r/algorand/testnet/tags
+  testnet:
+    repository: bvvovk/algoncustom #algorand/testnet
+    tag: "6" #"3.0.1"
+    pullPolicy: Always
+# From https://hub.docker.com/r/algorand/betanet/tags
+  betanet:
+    repository: algorand/betanet
+    tag: "3.0.1"
+    pullPolicy: Always
+# From https://hub.docker.com/r/algorand/mule/tags
+  mule:
+    repository: algorand/mule
+    tag: "latest"     #0.0.23 
+    pullPolicy: Always
+
+# Script for start container with custom settings
+script: enabled
+
+
+# Switch readiness/liveness Probes:
+readinessProbe:
+  enabled: false
+livenessProbe:
+  enabled: false
+  
+# Switch monitoring
+monitoring:
+  enabled: false
+
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -82,3 +118,5 @@ affinity: {}
 
 storage:
   size: 100Gi
+
+postgresStorage: 10Gi

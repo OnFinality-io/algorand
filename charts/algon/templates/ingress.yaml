@@ -10,7 +10,8 @@ kind: Ingress
 metadata:
   name: {{ $fullName }}
   labels:
-    {{- include "algon.labels" . | nindent 4 }}
+    release: {{.Release.Name}}
+    network: {{.Values.algorand.network}}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

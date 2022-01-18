@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: algon-data-pv-claim
+  name: {{ .Release.Name }}-data-pv-claim
 spec:
   accessModes:
     - ReadWriteOnce
