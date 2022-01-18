@@ -16,3 +16,12 @@ metadata:
 data:
 {{ (.Files.Glob "scripts/start_all.sh").AsConfig | indent 2 }}
 {{- end }}
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-indexer-script
+data:
+{{ (.Files.Glob "scripts/run_indexer.sh").AsConfig | indent 2 }}

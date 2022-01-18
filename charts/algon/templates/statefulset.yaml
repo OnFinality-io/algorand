@@ -1,11 +1,11 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Release.Name }} #{{ include "algon.fullname" . }}
+  name: {{ .Release.Name }} 
   labels:
-    {{- include "algon.labels" . | nindent 4 }}
+    network: {{.Values.algorand.network}}
 spec:
-  serviceName: {{ include "algon.fullname" . }}
+  serviceName: {{ .Release.Name }}-service
 {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
 {{- end }}
@@ -13,7 +13,9 @@ spec:
     type: RollingUpdate
   selector:
     matchLabels:
-      {{- include "algon.selectorLabels" . | nindent 6 }}
+      app: {{.Chart.Name}} # has to match .spec.template.metadata.labels
+      release: {{.Release.Name}}
+      network: {{.Values.algorand.network}}
   template:
     metadata:
     {{- with .Values.podAnnotations }}
@@ -21,7 +23,9 @@ spec:
         {{- toYaml . | nindent 8 }}
     {{- end }}
       labels:
-        {{- include "algon.selectorLabels" . | nindent 8 }}
+        app: {{.Chart.Name}}
+        release: {{.Release.Name}}
+        network: {{.Values.algorand.network}}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -39,10 +43,23 @@ spec:
           configMap:
             name: {{ .Release.Name }}-starts-script
       {{ end }}
+        - name: script-indexer
+          configMap:
+            name: {{ .Release.Name }}-indexer-script
+        - name: {{.Release.Name}}-postgres-secrets
+          secret:
+            items:
+            - key: postgres_password
+              path: postgres_password
+            - key: postgres_user
+              path: postgres_user
+            - key: postgres_db
+              path: postgres_db
+            secretName: {{.Release.Name}}-postgres-secrets
       serviceAccountName: {{ include "algon.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      hostNetwork: true
+      # hostNetwork: true
       containers:
         - name: {{ .Chart.Name }}
           env:
@@ -50,6 +67,8 @@ spec:
               value: "/algorand/node/data/"
             - name: ALGORAND_NETWORK
               value:  {{ .Values.algorand.network }}
+            # - name: PATH
+            #   value: "/root/node:$PATH"
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
 
@@ -116,11 +135,11 @@ spec:
           # tty: true
           # stdin: true
       {{- end }}
-      
+     
           volumeMounts:
             - mountPath: /algorand/node/
               name: data-volume
-            - mountPath: /root/node/data/config.json
+            - mountPath: /algorand/node/data/config.json
               subPath: config.json
               name: config-volume
         {{ if eq .Values.script "enabled" }}
@@ -129,13 +148,14 @@ spec:
         {{- end }}
 
           ports:
-            - name: http
-              containerPort: 8080
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 9100
               protocol: TCP
         {{- if .Values.readinessProbe.enabled }}
           readinessProbe:
             tcpSocket:
-              port: 9100
+              port: 8080 #9100
             initialDelaySeconds: 30
             periodSeconds: 30
         {{- end }}
@@ -143,10 +163,55 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 9100
+              port: 8080 #9100
             initialDelaySeconds: 300
             periodSeconds: 60
         {{- end }}
+
+        - name: indexer
+          env:
+            - name: ALGORAND_DATA
+              value: "/algorand/node/data/"
+            - name: ALGORAND_NETWORK
+              value: {{ .Values.algorand.network }}
+            - name: POSTGRES_HOST
+              value: {{.Release.Name}}-postgres-{{.Values.algorand.network}}
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "v8hlDV0yMAHHlIurYupj"
+            - name: DATABASE_NAME
+              value: "cexplorer"
+            - name: SSL_MODE
+              value: disable
+            - name: METRICS_MODE
+              value: "ON"
+            - name: ALGORAND_HOST
+              value: {{ .Release.Name }}-service
+            - name: ALGORAND_PORT
+              value: "8080"
+          image: bvvovk/algorandindexer:1
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # command: ["sh"]
+          # args: ["/scripts-dir/run_indexer.sh"]
+          command: [ "/bin/bash" ]
+          tty: true
+          stdin: true
+          volumeMounts:
+            - mountPath: /var/run/secrets
+              name: {{.Release.Name}}-postgres-secrets
+              readOnly: true
+            - mountPath: /algorand/node/
+              name: data-volume
+            - mountPath: /scripts-dir
+              name: script-indexer
+          ports:
+            - name: indexer
+              containerPort: 8980
+              protocol: TCP
+
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
